@@ -1,0 +1,35 @@
+dependencies:
+  cache_directories:
+    - "~/nistats_data"
+
+  pre:
+    # We need to remove conflicting texlive packages.
+    - sudo -E apt-get -yq remove texlive-binaries --purge
+    # Installing required packages for `make -C doc check command` to work.
+    - sudo -E apt-get -yq update
+    - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install dvipng texlive-latex-base texlive-latex-extra
+
+  override:
+    - pip install --upgrade pip
+    - pip install numpy
+    - pip install scipy
+    - pip install scikit-learn
+    - pip install nibabel
+    - pip install pandas
+    - pip install nilearn
+    - pip install nose-timer
+    - pip install -e .
+    # we need to do this here so the datasets will be cached
+    # pipefail is necessary to propagate exit codes
+    - set -o pipefail | tee ~/log.txt
+
+test:
+  override:
+    - make clean test test-coverage
+    
+    - cat ~/log.txt && if grep -q "Traceback (most recent call last):" ~/log.txt; then false; else true; fi
+
+general:
+  artifacts:
+    - "coverage"
+    - "~/log.txt"
